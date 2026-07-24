@@ -15,3 +15,15 @@ logger = "loguru"
 
 [pipeline]
 processors = ["validate", "authorize"]
+
+# Telegram-specific config
+[telegram]
+# Token is loaded from config.yaml or TELEGRAM_TOKEN env var
+parse_mode = "HTML"
+
+# Proxy settings
+[proxy]
+enabled = false
+type = "socks5"
+host = "127.0.0.1"
+port = 1080

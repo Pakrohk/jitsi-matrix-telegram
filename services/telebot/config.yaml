@@ -1,0 +1,40 @@
+# Telegram Bot Configuration
+
+# Bot token from @BotFather
+token: ""
+
+# Bot settings
+bot:
+  username: ""
+  parse_mode: "HTML"  # HTML or Markdown
+
+# Proxy settings (optional)
+# Supported: socks5, socks4, http
+proxy:
+  enabled: false
+  type: "socks5"  # socks5, socks4, http
+  host: "127.0.0.1"
+  port: 1080
+  # username: ""
+  # password: ""
+
+# Jitsi server
+jitsi:
+  server_url: "https://meet.example.com"
+  muc_domain: "conference.meet.example.com"
+
+# Admin settings
+admin:
+  whitelist: []  # List of Telegram user IDs
+  require_auth: false
+
+# Logging
+logging:
+  level: "INFO"
+  file: "telebot.log"
+
+# Rate limiting
+rate_limit:
+  enabled: true
+  max_requests: 30
+  window_seconds: 60
