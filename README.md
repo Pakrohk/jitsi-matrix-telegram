@@ -4,10 +4,10 @@ Matrix + Telegram bot for Jitsi server management, built on the **EVOID runtime*
 
 ## Features
 
+- **Self-hosted Jitsi Server**: Complete Docker-based Jitsi deployment
 - **Telegram Bot**: Control Jitsi meetings from Telegram
 - **Matrix Bot**: Control Jitsi meetings from Matrix (maubot plugin)
 - **Gateway Service**: Central Intent routing between services
-- **Jitsi Service**: Shared Jitsi functionality
 - **50+ Commands**: Full Jitsi iframe API support
 - **Proxy Support**: SOCKS5/SOCKS4/HTTP proxy for Telegram
 - **Storage**: SQLite for meeting persistence
@@ -27,109 +27,133 @@ Services communicate through **Intents**, not direct calls. The gateway routes, 
 | Service | Port | Description |
 |---------|------|-------------|
 | Jitsi Web | 8443 | Jitsi Meet web interface |
-| Jitsi Prosody | - | XMPP server |
-| Jitsi Jicofo | - | Conference Focus |
 | Jitsi JVB | 10000 | Videobridge (UDP) |
 | Gateway | 9000 | Central Intent router |
 | TeleBot | - | Telegram bot |
 | MatrixBot | - | Matrix bot (maubot plugin) |
 | Jitsi Bot | 8080 | Shared Jitsi functionality |
 
-## Quick Start
+## Docker Configuration
 
-### Using Docker Compose
+### 1. Clone and Configure
 
 ```bash
-# Clone the repository
 git clone https://github.com/Pakrohk/jitsi-matrix-telegram.git
 cd jitsi-matrix-telegram
-
-# Configure
 cp .env.example .env
-# Edit .env with your domain and tokens
-
-# Start Jitsi server
-docker-compose up -d jitsi-web jitsi-prosody jitsi-jicofo jitsi-jvb
-
-# Start bot services
-docker-compose up -d gateway telebot matrixbot jitsi-bot
-
-# View logs
-docker-compose logs -f
 ```
 
-### Jitsi Server Setup
+### 2. Edit `.env` File
 
-The Docker Compose includes a complete self-hosted Jitsi server:
-
-1. Edit `.env`:
-   ```bash
-   JITSI_DOMAIN=meet.example.com
-   JICOFO_COMPONENT_SECRET=your_secret
-   JICOFO_AUTH_PASSWORD=your_password
-   JVB_AUTH_PASSWORD=your_password
-   JVB_SECRET=your_secret
-   ```
-
-2. Start services:
-   ```bash
-   docker-compose up -d
-   ```
-
-3. Access Jitsi Meet at `https://meet.example.com:8443`
-
-### Manual Setup
+Open `.env` and configure:
 
 ```bash
-# Install EVOID
-uv venv && uv pip install -e "evoid[telegram,asgi,sqlite,loguru]"
+# ═══════════════════════════════════════════════════════════════════════════════
+# JITSI SERVER CONFIGURATION
+# ═══════════════════════════════════════════════════════════════════════════════
 
-# Install plugins
-evo install sqlite
-evo install loguru
+# Your domain name (required)
+JITSI_DOMAIN=meet.example.com
 
-# Run services
-evo run
-# Or run individual service
-evo service run gateway
-```
+# Jitsi server URL (auto-generated from domain if not set)
+JITSI_SERVER_URL=https://meet.example.com:8443
 
-## Configuration
+# MUC domain for conference rooms
+JITSI_MUC_DOMAIN=jitsi-meet.example.com
 
-### Environment Variables
+# ═══════════════════════════════════════════════════════════════════════════════
+# JITSI SECRETS (CHANGE THESE!)
+# ═══════════════════════════════════════════════════════════════════════════════
 
-```bash
-# Telegram Bot
-TELEGRAM_TOKEN=your_bot_token
+# Component secret for Jicofo
+JICOFO_COMPONENT_SECRET=your_random_secret_here
 
-# Matrix Bot
+# Auth passwords
+JICOFO_AUTH_PASSWORD=your_jicofo_password
+JVB_AUTH_PASSWORD=your_jvb_password
+
+# Videobridge secret
+JVB_SECRET=your_jvb_secret
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TELEGRAM BOT
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Get from @BotFather
+TELEGRAM_TOKEN=your_bot_token_here
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MATRIX BOT (optional)
+# ═══════════════════════════════════════════════════════════════════════════════
+
 MATRIX_HOMESERVER=https://matrix.example.com
 MATRIX_USER=@jitsi-bot:example.com
-MATRIX_PASSWORD=your_password
+MATRIX_PASSWORD=your_matrix_password
 
-# Jitsi Server
-JITSI_SERVER_URL=https://meet.example.com
-JITSI_MUC_DOMAIN=conference.meet.example.com
+# ═══════════════════════════════════════════════════════════════════════════════
+# PROXY (optional)
+# ═══════════════════════════════════════════════════════════════════════════════
 
-# Proxy (optional)
 PROXY_ENABLED=false
 PROXY_TYPE=socks5
 PROXY_HOST=127.0.0.1
 PROXY_PORT=1080
 ```
 
-### Service Configuration
+### 3. Generate Secrets
 
-Each service has its own `evoid.toml`:
+For production, generate secure secrets:
+
+```bash
+# Generate random secrets
+openssl rand -hex 32
+```
+
+### 4. Start Services
+
+```bash
+# Start Jitsi server first
+docker-compose up -d jitsi-web jitsi-prosody jitsi-jicofo jitsi-jvb
+
+# Wait for Jitsi to start, then start bots
+docker-compose up -d gateway telebot matrixbot jitsi-bot
+
+# Or start everything at once
+docker-compose up -d
+```
+
+### 5. Access Services
+
+| Service | URL |
+|---------|-----|
+| Jitsi Meet | https://meet.example.com:8443 |
+| Gateway API | http://localhost:9000/health |
+
+### 6. View Logs
+
+```bash
+# All services
+docker-compose logs -f
+
+# Specific service
+docker-compose logs -f jitsi-web
+docker-compose logs -f telebot
+```
+
+### 7. Stop Services
+
+```bash
+docker-compose down
+
+# With volumes
+docker-compose down -v
+```
+
+## Service Configuration
+
+### Telegram Bot (`services/telebot/evoid.toml`)
 
 ```toml
-[service]
-name = "telebot"
-
-[runtime]
-adapter = "telegram"
-port = 8001
-
 [engines.telegram]
 token = ""  # or TELEGRAM_TOKEN env
 
@@ -140,7 +164,30 @@ host = "127.0.0.1"
 port = 1080
 
 [engines.jitsi]
-server_url = "https://meet.example.com"
+server_url = "https://meet.example.com:8443"
+```
+
+### Matrix Bot (`services/matrixbot/evoid.toml`)
+
+```toml
+[engines.matrix]
+homeserver = "https://matrix.example.com"
+user = "@jitsi-bot:example.com"
+access_token = ""
+
+[engines.jitsi]
+server_url = "https://meet.example.com:8443"
+```
+
+### Gateway (`services/gateway/evoid.toml`)
+
+```toml
+[runtime]
+adapter = "asgi"
+port = 9000
+
+[pipeline]
+processors = ["validate", "authorize", "audit", "protect"]
 ```
 
 ## Commands
@@ -204,10 +251,11 @@ jitsi-matrix-telegram/
 │   ├── __init__.py
 │   └── processors/         # IOP pipeline processors
 ├── services/
-│   ├── gateway/            # Gateway service (port 8000)
-│   ├── telebot/            # Telegram bot (port 8001)
-│   ├── matrixbot/          # Matrix bot (port 8002)
-│   └── jitsi/              # Jitsi service (port 8003)
+│   ├── gateway/            # Gateway service (port 9000)
+│   ├── telebot/            # Telegram bot
+│   ├── matrixbot/          # Matrix bot (maubot plugin)
+│   └── jitsi/              # Jitsi service (port 8080)
+├── jitsi/                  # Jitsi server configuration
 ├── tests/                  # 73 tests
 ├── Dockerfile
 └── docker-compose.yml
