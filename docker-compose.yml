@@ -1,16 +1,115 @@
 version: '3.8'
 
 services:
-  gateway:
-    build: .
+  # ── Jitsi Server Services ──────────────────────────────────────────────────
+  jitsi-web:
+    image: jitsi/web:stable-9457
+    container_name: jitsi-web
     ports:
-      - "8000:8000"
-    command: python -m services.gateway.main
+      - "8443:443"
+      - "8000:80"
     volumes:
-      - ./services/gateway/evoid.toml:/app/services/gateway/evoid.toml
+      - ./jitsi/config:/config
+      - jitsi-web:/var/www/meet
+    environment:
+      - PUBLIC_URL=${JITSI_DOMAIN:-localhost}
+      - ENABLE_AUTH=0
+      - ENABLE_GUESTS=1
+      - ENABLE_RECORDING=0
+      - ENABLE_TRANSCRIPTIONS=0
+      - JICOFO_COMPONENT_SECRET=${JICOFO_COMPONENT_SECRET:-secret}
+      - JICOFO_AUTH_USER=focus
+      - JICOFO_AUTH_PASSWORD=${JICOFO_AUTH_PASSWORD:-pass}
+      - JVB_AUTH_USER=jvb
+      - JVB_AUTH_PASSWORD=${JVB_AUTH_PASSWORD:-pass}
+      - TZ=UTC
     networks:
       - jitsi-net
     restart: unless-stopped
+
+  jitsi-prosody:
+    image: jitsi/prosody:stable-9457
+    container_name: jitsi-prosody
+    volumes:
+      - ./jitsi/config:/config
+      - jitsi-prosody:/var/prosody
+    environment:
+      - PUBLIC_URL=${JITSI_DOMAIN:-localhost}
+      - ENABLE_AUTH=0
+      - ENABLE_GUESTS=1
+      - JICOFO_COMPONENT_SECRET=${JICOFO_COMPONENT_SECRET:-secret}
+      - JICOFO_AUTH_USER=focus
+      - JICOFO_AUTH_PASSWORD=${JICOFO_AUTH_PASSWORD:-pass}
+      - JVB_AUTH_USER=jvb
+      - JVB_AUTH_PASSWORD=${JVB_AUTH_PASSWORD:-pass}
+      - TZ=UTC
+    networks:
+      jitsi-net:
+        aliases:
+          - jitsi-meet.example.com
+    restart: unless-stopped
+
+  jitsi-jicofo:
+    image: jitsi/jicofo:stable-9457
+    container_name: jitsi-jicofo
+    volumes:
+      - ./jitsi/config:/config
+    environment:
+      - PUBLIC_URL=${JITSI_DOMAIN:-localhost}
+      - XMPP_SERVER=jitsi-prosody
+      - XMPP_DOMAIN=jitsi-meet.example.com
+      - JICOFO_COMPONENT_SECRET=${JICOFO_COMPONENT_SECRET:-secret}
+      - JICOFO_AUTH_USER=focus
+      - JICOFO_AUTH_PASSWORD=${JICOFO_AUTH_PASSWORD:-pass}
+      - JVB_AUTH_USER=jvb
+      - JVB_AUTH_PASSWORD=${JVB_AUTH_PASSWORD:-pass}
+      - TZ=UTC
+    networks:
+      - jitsi-net
+    restart: unless-stopped
+    depends_on:
+      - jitsi-prosody
+
+  jitsi-jvb:
+    image: jitsi/jvb:stable-9457
+    container_name: jitsi-jvb
+    ports:
+      - "10000:10000/udp"
+      - "4443:4443/tcp"
+    volumes:
+      - ./jitsi/config:/config
+    environment:
+      - PUBLIC_URL=${JITSI_DOMAIN:-localhost}
+      - XMPP_SERVER=jitsi-prosody
+      - XMPP_DOMAIN=jitsi-meet.example.com
+      - JICOFO_COMPONENT_SECRET=${JICOFO_COMPONENT_SECRET:-secret}
+      - JVB_AUTH_USER=jvb
+      - JVB_AUTH_PASSWORD=${JVB_AUTH_PASSWORD:-pass}
+      - JVB_STUN_SERVERS=stun:stun.l.google.com:19302
+      - JVB_PORT=10000
+      - JVB_SECRET=${JVB_SECRET:-secret}
+      - TZ=UTC
+    networks:
+      - jitsi-net
+    restart: unless-stopped
+    depends_on:
+      - jitsi-prosody
+
+  # ── Bot Services ────────────────────────────────────────────────────────────
+  gateway:
+    build: .
+    ports:
+      - "9000:9000"
+    command: python -m services.gateway.main
+    volumes:
+      - ./services/gateway/evoid.toml:/app/services/gateway/evoid.toml
+    environment:
+      - JITSI_SERVER_URL=https://${JITSI_DOMAIN:-localhost}:8443
+    networks:
+      - jitsi-net
+    restart: unless-stopped
+    depends_on:
+      - jitsi-web
 
   telebot:
     build: .
@@ -19,36 +118,47 @@ services:
       - ./services/telebot/evoid.toml:/app/services/telebot/evoid.toml
     environment:
       - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
+      - JITSI_SERVER_URL=https://${JITSI_DOMAIN:-localhost}:8443
     networks:
       - jitsi-net
     restart: unless-stopped
     depends_on:
       - gateway
+      - jitsi-web
 
   matrixbot:
     build: .
     command: python -m services.matrixbot.main
     volumes:
       - ./services/matrixbot/evoid.toml:/app/services/matrixbot/evoid.toml
+    environment:
+      - JITSI_SERVER_URL=https://${JITSI_DOMAIN:-localhost}:8443
     networks:
       - jitsi-net
     restart: unless-stopped
     depends_on:
       - gateway
+      - jitsi-web
 
-  jitsi:
+  jitsi-bot:
     build: .
     ports:
-      - "8003:8003"
+      - "8080:8080"
     command: python -m services.jitsi.main
     volumes:
       - ./services/jitsi/evoid.toml:/app/services/jitsi/evoid.toml
       - jitsi-data:/app/data
+    environment:
+      - JITSI_SERVER_URL=https://${JITSI_DOMAIN:-localhost}:8443
     networks:
       - jitsi-net
     restart: unless-stopped
+    depends_on:
+      - jitsi-web
 
 volumes:
+  jitsi-web:
+  jitsi-prosody:
   jitsi-data:
 
 networks:

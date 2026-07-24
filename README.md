@@ -26,10 +26,14 @@ Services communicate through **Intents**, not direct calls. The gateway routes, 
 
 | Service | Port | Description |
 |---------|------|-------------|
-| Gateway | 8000 | Central Intent router |
-| TeleBot | 8001 | Telegram bot |
-| MatrixBot | 8002 | Matrix bot (maubot plugin) |
-| Jitsi | 8003 | Shared Jitsi functionality |
+| Jitsi Web | 8443 | Jitsi Meet web interface |
+| Jitsi Prosody | - | XMPP server |
+| Jitsi Jicofo | - | Conference Focus |
+| Jitsi JVB | 10000 | Videobridge (UDP) |
+| Gateway | 9000 | Central Intent router |
+| TeleBot | - | Telegram bot |
+| MatrixBot | - | Matrix bot (maubot plugin) |
+| Jitsi Bot | 8080 | Shared Jitsi functionality |
 
 ## Quick Start
 
@@ -42,14 +46,37 @@ cd jitsi-matrix-telegram
 
 # Configure
 cp .env.example .env
-# Edit .env with your tokens
+# Edit .env with your domain and tokens
 
-# Run all services
-docker-compose up -d
+# Start Jitsi server
+docker-compose up -d jitsi-web jitsi-prosody jitsi-jicofo jitsi-jvb
+
+# Start bot services
+docker-compose up -d gateway telebot matrixbot jitsi-bot
 
 # View logs
 docker-compose logs -f
 ```
+
+### Jitsi Server Setup
+
+The Docker Compose includes a complete self-hosted Jitsi server:
+
+1. Edit `.env`:
+   ```bash
+   JITSI_DOMAIN=meet.example.com
+   JICOFO_COMPONENT_SECRET=your_secret
+   JICOFO_AUTH_PASSWORD=your_password
+   JVB_AUTH_PASSWORD=your_password
+   JVB_SECRET=your_secret
+   ```
+
+2. Start services:
+   ```bash
+   docker-compose up -d
+   ```
+
+3. Access Jitsi Meet at `https://meet.example.com:8443`
 
 ### Manual Setup
 
