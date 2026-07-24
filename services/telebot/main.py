@@ -1,57 +1,66 @@
 """Telegram Bot Service — Converts Telegram messages to EVOID Intents.
 
 IOP: Adapters convert external events to Intents.
-Telegram messages → Intents → Gateway → Response → Telegram
+Config lives in evoid.toml under [engines.options.telegram].
 """
 
 import asyncio
+import os
 from pathlib import Path
 
 from evoid import Intent, Level
+from evoid.config.loader import load as load_config
 from evoid.engines.logger import loguru as log
 
-from config import load_config, BotConfig
 
+# ── Load Config from evoid.toml ─────────────────────────────────────────────
 
-# ── Load Config ─────────────────────────────────────────────────────────────
+_config = load_config(Path(__file__).parent / "evoid.toml")
 
-config = load_config(Path(__file__).parent / "config.yaml")
+# EVOID extracts [engines.X] as options["X"]
+_token = _config.engines.options.get("telegram", {}).get("token", "")
+_token = os.environ.get("TELEGRAM_TOKEN", _token)
+
+_proxy_cfg = _config.engines.options.get("proxy", {})
+_proxy_enabled = _proxy_cfg.get("enabled", False)
+
+_jitsi_cfg = _config.engines.options.get("jitsi", {})
+_jitsi_url = os.environ.get("JITSI_SERVER_URL", _jitsi_cfg.get("server_url", "https://meet.example.com"))
+
+_admin_cfg = _config.engines.options.get("admin", {})
+_admin_whitelist = _admin_cfg.get("whitelist", [])
 
 
 # ── Bot Creation ────────────────────────────────────────────────────────────
 
-def create_telegram_bot(config: BotConfig):
+def create_telegram_bot():
     """Create Telegram bot with optional proxy support."""
     from evoid.adapters.telegram import create_bot
 
-    if not config.token:
+    if not _token:
         return None
 
     # Proxy support
-    proxy_url = config.proxy.url
-    if proxy_url:
-        log.info(f"Using proxy: {config.proxy.type}://{config.proxy.host}:{config.proxy.port}")
+    if _proxy_enabled:
+        proxy_type = _proxy_cfg.get("type", "socks5")
+        proxy_host = _proxy_cfg.get("host", "127.0.0.1")
+        proxy_port = _proxy_cfg.get("port", 1080)
+        log.info(f"Using proxy: {proxy_type}://{proxy_host}:{proxy_port}")
 
-    bot = create_bot(token=config.token)
+    bot = create_bot(token=_token)
     return bot
 
 
-bot = create_telegram_bot(config)
+bot = create_telegram_bot()
 
 
 # ── Intent Handlers ─────────────────────────────────────────────────────────
 
 async def handle_start(intent: Intent) -> str:
-    """Handle /start command."""
-    return f"""🤖 <b>Jitsi Bot</b>
-
-Welcome! I manage Jitsi meetings from Telegram.
-
-Type /help to see available commands."""
+    return "🤖 <b>Jitsi Bot</b>\n\nWelcome! Type /help for commands."
 
 
 async def handle_help(intent: Intent) -> str:
-    """Handle /help command."""
     return """📋 <b>Commands</b>
 
 <b>Meeting:</b>
@@ -76,69 +85,55 @@ async def handle_help(intent: Intent) -> str:
 
 
 async def handle_create(intent: Intent) -> str:
-    """Handle /create command."""
     args = intent.metadata.get("args", [])
     room_name = args[0] if args else "My Meeting"
     room_id = room_name.lower().replace(" ", "-")
-    url = f"{config.jitsi.server_url}/{room_id}"
-
+    url = f"{_jitsi_url}/{room_id}"
     return f"✅ Meeting created!\n\n🔗 <a href=\"{url}\">{room_name}</a>"
 
 
 async def handle_join(intent: Intent) -> str:
-    """Handle /join command."""
     args = intent.metadata.get("args", [])
     if not args:
         return "Usage: /join &lt;room_name&gt;"
-
     room_id = args[0].lower().replace(" ", "-")
-    url = f"{config.jitsi.server_url}/{room_id}"
-
+    url = f"{_jitsi_url}/{room_id}"
     return f"🔗 <a href=\"{url}\">Join {args[0]}</a>"
 
 
 async def handle_watch(intent: Intent) -> str:
-    """Handle /watch command."""
     args = intent.metadata.get("args", [])
     if not args:
         return "Usage: /watch &lt;url&gt; [name]"
-
     from shared import detect_content_type
     content_type = detect_content_type(args[0])
     room_name = args[1] if len(args) > 1 else "Watch Party"
     room_id = room_name.lower().replace(" ", "-")
-    url = f"{config.jitsi.server_url}/{room_id}"
-
+    url = f"{_jitsi_url}/{room_id}"
     return f"🎬 <b>Watch Party</b> ({content_type})\n\n🔗 <a href=\"{url}\">{room_name}</a>\n📺 {args[0]}"
 
 
 async def handle_stopwatch(intent: Intent) -> str:
-    """Handle /stopwatch command."""
     return "⏹️ Watch party stopped"
 
 
 async def handle_mute(intent: Intent) -> str:
-    """Handle /mute command."""
     return "🔇 Audio toggled"
 
 
 async def handle_video(intent: Intent) -> str:
-    """Handle /video command."""
     return "📹 Video toggled"
 
 
 async def handle_screen(intent: Intent) -> str:
-    """Handle /screen command."""
     return "🖥️ Screen share toggled"
 
 
 async def handle_hangup(intent: Intent) -> str:
-    """Handle /hangup command."""
     return "📞 Call ended"
 
 
 async def handle_kick(intent: Intent) -> str:
-    """Handle /kick command."""
     args = intent.metadata.get("args", [])
     if not args:
         return "Usage: /kick &lt;participant_id&gt;"
@@ -146,7 +141,6 @@ async def handle_kick(intent: Intent) -> str:
 
 
 async def handle_mod(intent: Intent) -> str:
-    """Handle /mod command."""
     args = intent.metadata.get("args", [])
     if not args:
         return "Usage: /mod &lt;participant_id&gt;"
@@ -154,14 +148,12 @@ async def handle_mod(intent: Intent) -> str:
 
 
 async def handle_record(intent: Intent) -> str:
-    """Handle /record command."""
     args = intent.metadata.get("args", [])
     mode = args[0] if args else "local"
     return f"🔴 Recording started ({mode})"
 
 
 async def handle_stoprecord(intent: Intent) -> str:
-    """Handle /stoprecord command."""
     args = intent.metadata.get("args", [])
     mode = args[0] if args else "local"
     return f"⏹️ Recording stopped ({mode})"
@@ -170,7 +162,6 @@ async def handle_stoprecord(intent: Intent) -> str:
 # ── Register Handlers ───────────────────────────────────────────────────────
 
 def register_handlers(bot):
-    """Register all command handlers with the bot."""
     from evoid.adapters.telegram import on
 
     on(bot, "command:/start", handle_start)
@@ -192,15 +183,14 @@ def register_handlers(bot):
 # ── Main ────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    log.init("telebot", level=config.logging.level)
+    log.init("telebot", level="INFO")
 
     if not bot:
-        print("Error: Set TELEGRAM_TOKEN in config.yaml or environment")
-        print("  export TELEGRAM_TOKEN='your_bot_token'")
+        print("Error: Set token in evoid.toml or TELEGRAM_TOKEN env var")
     else:
         register_handlers(bot)
         print(f"Starting Telegram bot...")
-        print(f"Jitsi server: {config.jitsi.server_url}")
-        if config.proxy.enabled:
-            print(f"Proxy: {config.proxy.type}://{config.proxy.host}:{config.proxy.port}")
+        print(f"Jitsi: {_jitsi_url}")
+        if _proxy_enabled:
+            print(f"Proxy: {_proxy_cfg.get('type')}://{_proxy_cfg.get('host')}:{_proxy_cfg.get('port')}")
         asyncio.run(run_bot(bot))

@@ -16,14 +16,27 @@ logger = "loguru"
 [pipeline]
 processors = ["validate", "authorize"]
 
-# Telegram-specific config
-[telegram]
-# Token is loaded from config.yaml or TELEGRAM_TOKEN env var
+# ── Telegram Config ──────────────────────────────────────────────────────────
+# EVOID extracts sub-tables from [engines] as options
+[engines.telegram]
+token = ""  # or TELEGRAM_TOKEN env var
 parse_mode = "HTML"
 
-# Proxy settings
-[proxy]
+# ── Proxy Config ─────────────────────────────────────────────────────────────
+[engines.proxy]
 enabled = false
-type = "socks5"
+type = "socks5"    # socks5, socks4, http
 host = "127.0.0.1"
 port = 1080
+# username = ""
+# password = ""
+
+# ── Jitsi Config ─────────────────────────────────────────────────────────────
+[engines.jitsi]
+server_url = "https://meet.example.com"
+muc_domain = "conference.meet.example.com"
+
+# ── Admin Config ─────────────────────────────────────────────────────────────
+[engines.admin]
+whitelist = []     # Telegram user IDs
+require_auth = false
