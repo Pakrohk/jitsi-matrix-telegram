@@ -1,15 +1,16 @@
-# matrix-jitsi-bot
+# Jitsi Matrix Telegram Bot
 
-Matrix + Telegram bot for Jitsi management, built on the **EVOID runtime** (Intent-Oriented Programming).
+Matrix + Telegram bot for Jitsi server management, built on the **EVOID runtime** (Intent-Oriented Programming).
 
-## What It Does
+## Features
 
-Manages a self-hosted Jitsi server from both Matrix and Telegram:
-- Create/manage meetings
-- Watch parties (YouTube, video, audio)
-- Assign moderators
-- Control conference state
-- 50+ Jitsi iframe commands
+- **Telegram Bot**: Control Jitsi meetings from Telegram
+- **Matrix Bot**: Control Jitsi meetings from Matrix (maubot plugin)
+- **Gateway Service**: Central Intent routing between services
+- **Jitsi Service**: Shared Jitsi functionality
+- **50+ Commands**: Full Jitsi iframe API support
+- **Proxy Support**: SOCKS5/SOCKS4/HTTP proxy for Telegram
+- **Storage**: SQLite for meeting persistence
 
 ## Architecture
 
@@ -21,93 +22,170 @@ Telegram/Matrix → Adapter → Intent → Pipeline → Handler → Jitsi
 
 Services communicate through **Intents**, not direct calls. The gateway routes, secures, and orchestrates.
 
+## Services
+
+| Service | Port | Description |
+|---------|------|-------------|
+| Gateway | 8000 | Central Intent router |
+| TeleBot | 8001 | Telegram bot |
+| MatrixBot | 8002 | Matrix bot (maubot plugin) |
+| Jitsi | 8003 | Shared Jitsi functionality |
+
 ## Quick Start
 
+### Using Docker Compose
+
 ```bash
-# Install EVOID
-uv venv && uv pip install -e "evoid[telegram]"
-
-# Install plugins
-evo install sqlite
-evo install smart-storage
-evo plug install evoid-di
-
-# Install Matrix dependencies
-uv pip install matrix-nio aiohttp
+# Clone the repository
+git clone https://github.com/Pakrohk/jitsi-matrix-telegram.git
+cd jitsi-matrix-telegram
 
 # Configure
 cp .env.example .env
 # Edit .env with your tokens
 
-# Run
+# Run all services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+```
+
+### Manual Setup
+
+```bash
+# Install EVOID
+uv venv && uv pip install -e "evoid[telegram,asgi,sqlite,loguru]"
+
+# Install plugins
+evo install sqlite
+evo install loguru
+
+# Run services
 evo run
+# Or run individual service
+evo service run gateway
 ```
 
-## Environment Variables
+## Configuration
 
+### Environment Variables
+
+```bash
+# Telegram Bot
+TELEGRAM_TOKEN=your_bot_token
+
+# Matrix Bot
+MATRIX_HOMESERVER=https://matrix.example.com
+MATRIX_USER=@jitsi-bot:example.com
+MATRIX_PASSWORD=your_password
+
+# Jitsi Server
+JITSI_SERVER_URL=https://meet.example.com
+JITSI_MUC_DOMAIN=conference.meet.example.com
+
+# Proxy (optional)
+PROXY_ENABLED=false
+PROXY_TYPE=socks5
+PROXY_HOST=127.0.0.1
+PROXY_PORT=1080
 ```
-TELEGRAM_TOKEN       Telegram bot token
-MATRIX_HOMESERVER    Matrix homeserver URL
-MATRIX_USER          Bot Matrix user ID
-MATRIX_PASSWORD      Bot password
-JITSI_SERVER_URL     Jitsi server URL
-JITSI_MUC_DOMAIN     Jitsi MUC domain
+
+### Service Configuration
+
+Each service has its own `evoid.toml`:
+
+```toml
+[service]
+name = "telebot"
+
+[runtime]
+adapter = "telegram"
+port = 8001
+
+[engines.telegram]
+token = ""  # or TELEGRAM_TOKEN env
+
+[engines.proxy]
+enabled = false
+type = "socks5"
+host = "127.0.0.1"
+port = 1080
+
+[engines.jitsi]
+server_url = "https://meet.example.com"
 ```
 
 ## Commands
 
-### Matrix (maubot plugin)
-```
-!jitsi create [name]     Create meeting
-!jitsi join <room>       Get join link
-!jitsi watch <url>       Watch party
-!jitsi mute              Toggle audio
-!jitsi video             Toggle video
-!jitsi kick <id>         Kick participant (mod)
-... 50+ commands
-```
-
 ### Telegram
-```
-/create [name]     Create meeting
-/join <room>       Join meeting
-/watch <url>       Watch party
+
+| Command | Description |
+|---------|-------------|
+| `/start` | Welcome message |
+| `/help` | Show help |
+| `/create [name]` | Create meeting |
+| `/join <room>` | Join meeting |
+| `/watch <url> [name]` | Watch party |
+| `/stopwatch` | Stop watch party |
+| `/mute` | Toggle audio |
+| `/video` | Toggle video |
+| `/screen` | Toggle screen share |
+| `/hangup` | End call |
+| `/kick <id>` | Kick participant (mod) |
+| `/mod <id>` | Grant moderator (mod) |
+| `/record <mode>` | Start recording (mod) |
+| `/stoprecord <mode>` | Stop recording (mod) |
+
+### Matrix (maubot)
+
+| Command | Description |
+|---------|-------------|
+| `!jitsi create [name]` | Create meeting |
+| `!jitsi join <room>` | Join meeting |
+| `!jitsi watch <url> [name]` | Watch party |
+| `!jitsi stopwatch` | Stop watch party |
+| `!jitsi mute` | Toggle audio |
+| `!jitsi video` | Toggle video |
+| `!jitsi screen` | Toggle screen share |
+| `!jitsi hangup` | End call |
+| `!jitsi kick <id>` | Kick participant (mod) |
+| `!jitsi mod <id>` | Grant moderator (mod) |
+| `!jitsi record <mode>` | Start recording (mod) |
+| `!jitsi stoprecord <mode>` | Stop recording (mod) |
+
+## Development
+
+```bash
+# Run tests
+uv run pytest tests/ -v
+
+# Lint
+uv run ruff check src/
+uv run ruff format src/
+
+# Build maubot plugin
+cd services/matrixbot
+zip -9r jitsi-bot.mbp *
 ```
 
 ## Project Structure
 
 ```
-src/
-├── main.py               # Gateway entry point
-├── config/               # Configuration
-├── intents/              # Intent definitions (pure data)
-├── handlers/             # Handler functions (one per intent)
-├── processors/           # Pipeline processors
+jitsi-matrix-telegram/
+├── shared/                 # Shared models and processors
+│   ├── __init__.py
+│   └── processors/         # IOP pipeline processors
 ├── services/
-│   ├── gateway.py        # Gateway service (routing)
-│   ├── telegram.py       # Telegram bot service
-│   ├── matrix.py         # Matrix bot service
-│   └── jitsi.py          # Jitsi service (shared)
-├── models/               # Data models
-evoid.toml                # Runtime config
-```
-
-## Development
-
-```bash
-# Lint
-uv run ruff check src/
-uv run ruff format src/
-
-# Test
-uv run pytest tests/ -v
-uv run pytest tests/ --evoid-inspect
-
-# List intents and processors
-evo list-intents
-evo list-processors
+│   ├── gateway/            # Gateway service (port 8000)
+│   ├── telebot/            # Telegram bot (port 8001)
+│   ├── matrixbot/          # Matrix bot (port 8002)
+│   └── jitsi/              # Jitsi service (port 8003)
+├── tests/                  # 73 tests
+├── Dockerfile
+└── docker-compose.yml
 ```
 
 ## License
 
-Apache-2.0
+Apache License 2.0

@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  gateway:
+    build: .
+    ports:
+      - "8000:8000"
+    command: python -m services.gateway.main
+    volumes:
+      - ./services/gateway/evoid.toml:/app/services/gateway/evoid.toml
+    networks:
+      - jitsi-net
+    restart: unless-stopped
+
+  telebot:
+    build: .
+    command: python -m services.telebot.main
+    volumes:
+      - ./services/telebot/evoid.toml:/app/services/telebot/evoid.toml
+    environment:
+      - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
+    networks:
+      - jitsi-net
+    restart: unless-stopped
+    depends_on:
+      - gateway
+
+  matrixbot:
+    build: .
+    command: python -m services.matrixbot.main
+    volumes:
+      - ./services/matrixbot/evoid.toml:/app/services/matrixbot/evoid.toml
+    networks:
+      - jitsi-net
+    restart: unless-stopped
+    depends_on:
+      - gateway
+
+  jitsi:
+    build: .
+    ports:
+      - "8003:8003"
+    command: python -m services.jitsi.main
+    volumes:
+      - ./services/jitsi/evoid.toml:/app/services/jitsi/evoid.toml
+      - jitsi-data:/app/data
+    networks:
+      - jitsi-net
+    restart: unless-stopped
+
+volumes:
+  jitsi-data:
+
+networks:
+  jitsi-net:
+    driver: bridge
