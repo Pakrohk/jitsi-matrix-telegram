@@ -1,0 +1,69 @@
+[project]
+name = "matrix-jitsi-bot"
+version = "0.1.0"
+description = "Matrix + Telegram bot for Jitsi management using EVOID IOP runtime"
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.12"
+authors = [
+    { name = "EvolveBeyond", email = "pakrohk@gmail.com" }
+]
+keywords = ["evoid", "jitsi", "matrix", "telegram", "iop"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Communications :: Chat",
+]
+dependencies = [
+    "evoid>=0.5.0",
+    "evoid[telegram]>=0.5.0",
+    "evoid[asgi]>=0.5.0",
+    "evoid[sqlite]>=0.5.0",
+    "evoid[loguru]>=0.5.0",
+    "evoid[toml]>=0.5.0",
+    "matrix-nio[e2e]>=0.20.0",
+    "aiohttp>=3.9.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "ruff>=0.4.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/EvolveBeyond/matrix-jitsi-bot"
+Repository = "https://github.com/EvolveBeyond/matrix-jitsi-bot"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["shared", "services"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "C90", "I", "N", "UP"]
+ignore = ["E501", "N802", "C901"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.evoid]
+adapter = "asgi"
+host = "0.0.0.0"
+
+[tool.evoid.engines]
+schema = "native"
+storage = "memory"
+cache = "memory"
+logger = "loguru"

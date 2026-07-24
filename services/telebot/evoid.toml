@@ -1,0 +1,17 @@
+[service]
+name = "telebot"
+version = "0.1.0"
+
+[runtime]
+adapter = "telegram"
+host = "0.0.0.0"
+port = 8001
+
+[engines]
+schema = "native"
+storage = "memory"
+cache = "memory"
+logger = "loguru"
+
+[pipeline]
+processors = ["validate", "authorize"]
