@@ -30,17 +30,14 @@ graph TD
 # Install dependencies
 uv sync
 
-# Run all services (separate terminals)
-uv run python -m services.gateway.main     # port 8000
-uv run python -m services.telebot.main     # port 8001
-uv run python -m services.matrixbot.main   # port 8002
-uv run python -m services.jitsi.main       # port 8003
+# Run ALL services with single command (recommended)
+uv run evo run
 
-# Or with evo CLI
-evo service run gateway
-evo service run telebot
-evo service run matrixbot
-evo service run jitsi
+# Or run services individually
+uv run evo service run gateway     # port 8000
+uv run evo service run telebot     # port 8001
+uv run evo service run matrixbot   # port 8002
+uv run evo service run jitsi       # port 8003
 ```
 
 ## Docker Deployment
