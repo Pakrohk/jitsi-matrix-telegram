@@ -19,7 +19,7 @@ processors = ["validate", "authorize"]
 # ── Telegram Config ──────────────────────────────────────────────────────────
 # EVOID extracts [engines.X] as options["X"]
 [engines.telegram]
-token = "5984008409:AAFg1wLbLV1SzUlX7AdcbDkwpBcAKKjGlOQ"  # @ChangePayBot
+token = ""  # Set via TELEGRAM_TOKEN env var
 parse_mode = "HTML"
 
 # ── Proxy Config (Iran: socks5://127.0.0.1:2081) ─────────────────────────────
