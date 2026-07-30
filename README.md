@@ -4,28 +4,15 @@ EVOID-based bot for managing Jitsi meetings via Telegram and Matrix.
 
 ## Architecture
 
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│  Telegram   │     │   Matrix    │     │   HTTP/WS   │
-│  Adapter    │     │   Adapter   │     │   Gateway   │
-└──────┬──────┘     └──────┬──────┘     └──────┬──────┘
-       │                   │                   │
-       ▼                   ▼                   ▼
-┌─────────────────────────────────────────────────┐
-│              MESSAGE BUS (global)               │
-│  publish() / subscribe() / call()               │
-└────────┬──────────────────┬────────────────┘
-         │                  │
-    ┌────▼────┐         ┌────▼────┐
-    │ Gateway │         │  Jitsi  │
-    │ Service │         │ Service │
-    └────┬────┘         └────┬────┘
-         │                  │
-         └──────────┬───────┘
-                    ▼
-            ┌───────────────┐
-            │  SQLite/Redis │
-            └───────────────┘
+```mermaid
+graph TD
+    A[Telegram Adapter] --> D[Message Bus]
+    B[Matrix Adapter] --> D
+    C[HTTP/WS Gateway] --> D
+    D --> E[Gateway Service]
+    D --> F[Jitsi Service]
+    E --> G[SQLite/Redis]
+    F --> G
 ```
 
 ## Services
