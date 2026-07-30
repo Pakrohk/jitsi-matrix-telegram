@@ -1,13 +1,13 @@
-"""Shared models and utilities for all services."""
+"""Shared models and utilities — frozen dataclasses for immutability."""
 
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
 
-@dataclass
+@dataclass(frozen=True)
 class Meeting:
-    """A Jitsi meeting room."""
+    """A Jitsi meeting room — immutable."""
 
     room_id: str
     room_name: str
@@ -15,13 +15,13 @@ class Meeting:
     url: str
     created_at: datetime = field(default_factory=datetime.now)
     is_active: bool = True
-    participants: list[str] = field(default_factory=list)
+    participants: tuple[str, ...] = field(default_factory=tuple)
     metadata: dict[str, Any] = field(default_factory=dict)
 
 
-@dataclass
+@dataclass(frozen=True)
 class WatchParty:
-    """A Jitsi watch party with shared video."""
+    """A Jitsi watch party with shared video — immutable."""
 
     room_id: str
     room_name: str
@@ -33,9 +33,9 @@ class WatchParty:
     metadata: dict[str, Any] = field(default_factory=dict)
 
 
-@dataclass
+@dataclass(frozen=True)
 class UserPreference:
-    """User preference stored in database."""
+    """User preference stored in database — immutable."""
 
     user_id: str
     key: str
@@ -43,9 +43,9 @@ class UserPreference:
     updated_at: datetime = field(default_factory=datetime.now)
 
 
-@dataclass
+@dataclass(frozen=True)
 class ModeratorAction:
-    """Log of moderator actions."""
+    """Log of moderator actions — immutable."""
 
     room_id: str
     action: str

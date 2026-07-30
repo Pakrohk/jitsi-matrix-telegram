@@ -99,7 +99,7 @@ services:
   gateway:
     build: .
     ports:
-      - "9000:9000"
+      - "8000:8000"
     command: python -m services.gateway.main
     volumes:
       - ./services/gateway/evoid.toml:/app/services/gateway/evoid.toml
@@ -140,10 +140,10 @@ services:
       - gateway
       - jitsi-web
 
-  jitsi-bot:
+  jitsi:
     build: .
     ports:
-      - "8080:8080"
+      - "8003:8003"
     command: python -m services.jitsi.main
     volumes:
       - ./services/jitsi/evoid.toml:/app/services/jitsi/evoid.toml

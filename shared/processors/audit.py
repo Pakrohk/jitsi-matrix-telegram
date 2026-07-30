@@ -1,23 +1,12 @@
-"""Audit processor — Action logging.
+"""Audit processor — logs all critical intents for audit trail."""
 
-IOP: Pure function. Logs critical operations.
-"""
+from evoid import Intent
+from evoid.core.context import Context
+from evoid.core.pipeline import ProcessorResult
 
-from evoid.core import Context
 
-
-async def audit(ctx: Context) -> dict:
-    """Audit log for critical operations.
-
-    Returns:
-        dict: {"audited": True}
-    """
-    intent = ctx.intent
-
-    # In production, this would write to audit log
-    # For now, just return success
-    if intent.level.value == "critical":
-        user = intent.metadata.get("user", "unknown")
-        # await write_audit_log(intent.name, user, intent.metadata)
-
-    return {"audited": True}
+async def audit(ctx: Context, intent: Intent) -> ProcessorResult:
+    """Log critical intents for audit trail."""
+    # Log to console (in production: send to audit log service)
+    print(f"[AUDIT] {intent.name} by {intent.metadata.get('user_id')} in {intent.metadata.get('chat_id')}")
+    return ProcessorResult.ok()

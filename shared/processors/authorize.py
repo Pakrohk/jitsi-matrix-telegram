@@ -1,29 +1,30 @@
-"""Authorize processor — Permission verification.
+"""Authorization processor — checks admin permissions for critical intents."""
 
-IOP: Pure function. Checks user authorization.
-"""
+from evoid import Intent
+from evoid.core.context import Context
+from evoid.core.pipeline import ProcessorResult
 
-from evoid.core import Context
+
+ADMIN_INTENTS = {
+    "jitsi:kick",
+    "jitsi:grant_moderator",
+    "jitsi:end_conference",
+    "jitsi:start_recording",
+    "jitsi:stop_recording",
+    "jitsi:toggle_lobby",
+}
 
 
-async def authorize(ctx: Context) -> dict:
-    """Authorize based on intent level.
+async def authorize(ctx: Context, intent: Intent) -> ProcessorResult:
+    """Check if user is authorized for admin intents."""
+    if intent.name not in ADMIN_INTENTS:
+        return ProcessorResult.ok()
 
-    Returns:
-        dict: {"authorized": True/False, "reason": str (optional)}
-    """
-    intent = ctx.intent
+    # Check whitelist from service config
+    whitelist = ctx.deps.get("admin_whitelist", [])
+    user_id = intent.metadata.get("user_id")
 
-    # CRITICAL level requires admin
-    if intent.level.value == "critical":
-        user = intent.metadata.get("user", "")
-        whitelist = intent.metadata.get("admin_whitelist", [])
+    if whitelist and str(user_id) not in map(str, whitelist):
+        return ProcessorResult.fail(f"User {user_id} not authorized for {intent.name}")
 
-        # Empty whitelist means everyone is authorized
-        if whitelist and user not in whitelist:
-            return {
-                "authorized": False,
-                "reason": f"{user} not authorized for critical operations",
-            }
-
-    return {"authorized": True}
+    return ProcessorResult.ok()

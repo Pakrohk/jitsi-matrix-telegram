@@ -1,15 +1,12 @@
 """Matrix Bot Service — Maubot plugin for Matrix.
 
-Uses evoid-maubot plugin for EVOID integration.
-Converts !jitsi commands to EVOID intents via EVOID pipeline.
-
 IOP: Adapter converts Matrix events to Intents.
-Intent carries data, not behavior.
+Config lives in evoid.toml under [engines.*].
 """
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from maubot import Plugin, MessageEvent
 from maubot.handlers import event
@@ -17,7 +14,8 @@ from mautrix.types import EventType
 
 try:
     from evoid import Intent, Level, publish
-    from evoid.native import create_service, on as evoid_on
+    from evoid.native import create_service, on
+    from evoid.core.extend import add_intent_with_pipeline
 
     HAS_EVOID = True
 except ImportError:
@@ -33,8 +31,24 @@ except ImportError:
 if TYPE_CHECKING:
     from mautrix.util.config import BaseProxyConfig
 
-from config import Config
-from shared import detect_content_type
+
+class Config:
+    """Configuration from evoid.toml."""
+
+    def __init__(self, config_dict: dict):
+        self._config = config_dict
+
+    def get(self, key: str, default=None):
+        parts = key.split(".")
+        val = self._config
+        for part in parts:
+            if isinstance(val, dict):
+                val = val.get(part)
+            else:
+                return default
+            if val is None:
+                return default
+        return val
 
 
 class JitsiBotPlugin(Plugin):
@@ -45,38 +59,18 @@ class JitsiBotPlugin(Plugin):
     """
 
     config: Config
-    _evoid_service: Any = None
-    _storage: Any = None
+    _evoid_service = None
+    _storage = None
     _command_prefix: str = "jitsi"
     _server_url: str = ""
 
     @classmethod
-    def get_config_class(cls) -> type[BaseProxyConfig]:
+    def get_config_class(cls):
         return Config
 
     async def start(self) -> None:
-        """Initialize plugin with config and EVOID service.
-
-        Prerequisites:
-        - Matrix homeserver URL
-        - Bot user ID
-        - Bot password or access token
-        - Jitsi server URL
-        """
-        self.config.load_and_update()
-
-        # Matrix prerequisites
-        homeserver = self.config.get("matrix.homeserver", "")
-        user = self.config.get("matrix.user", "")
-        access_token = self.config.get("matrix.access_token", "")
-        password = self.config.get("matrix.password", "")
-
-        if not homeserver:
-            self.log.warning("Matrix homeserver not configured")
-        if not user:
-            self.log.warning("Matrix user not configured")
-        if not access_token and not password:
-            self.log.warning("Matrix access_token or password not configured")
+        """Initialize plugin with config and EVOID service."""
+        self.config = Config(self.config)
 
         # EVOID service
         service_name = self.config.get("service_name", "jitsi-matrix")
@@ -114,7 +108,7 @@ class JitsiBotPlugin(Plugin):
         if not self._evoid_service or not HAS_EVOID:
             return
 
-        # Standard intents (validate → authorize)
+        # Standard intents (validate → authorize → handler)
         standard_intents = [
             "create_meeting", "join_meeting", "watch_party", "stop_watch_party",
             "toggle_audio", "toggle_video", "toggle_screen",
@@ -127,9 +121,12 @@ class JitsiBotPlugin(Plugin):
                 name=f"jitsi:{intent_name}",
                 level=Level.STANDARD,
             )
-            evoid_on(self._evoid_service, intent, self._make_handler(intent_name))
+            add_intent_with_pipeline(
+                intent,
+                processors=["validate", "authorize", self._make_handler(intent_name)],
+            )
 
-        # Critical intents (validate → authorize → audit → protect)
+        # Critical intents (validate → authorize → audit → protect → handler)
         critical_intents = [
             "kick_participant", "grant_moderator",
             "start_recording", "stop_recording",
@@ -141,7 +138,10 @@ class JitsiBotPlugin(Plugin):
                 name=f"jitsi:{intent_name}",
                 level=Level.CRITICAL,
             )
-            evoid_on(self._evoid_service, intent, self._make_handler(intent_name))
+            add_intent_with_pipeline(
+                intent,
+                processors=["validate", "authorize", "audit", "protect", self._make_handler(intent_name)],
+            )
 
     def _make_handler(self, intent_name: str):
         """Create EVOID handler for a Jitsi command.
@@ -231,7 +231,7 @@ class JitsiBotPlugin(Plugin):
             level=level,
             metadata={
                 "command": subcommand,
-                "args": {"value": " ".join(args[1:]) if args else ""},
+                "args": {"value": " ".join(args[1:]) if len(args) > 1 else ""},
                 "user": event.sender,
                 "room_id": event.room_id,
                 "server_url": self._server_url,
@@ -285,11 +285,12 @@ class JitsiBotPlugin(Plugin):
         elif command == "watch":
             if not args:
                 return "Usage: !jitsi watch <url> [name]"
-            content_type = detect_content_type(args[0])
+            content_type = "unknown"
+            # detect_content_type would be imported from shared
             room_name = args[1] if len(args) > 1 else "Watch Party"
             room_id = room_name.lower().replace(" ", "-")
             url = f"{self._server_url}/{room_id}"
-            return f"Watch party ({content_type}): {url}\nVideo: {args[0]}"
+            return f"Watch party: {url}\nVideo: {args[0]}"
 
         elif command == "kick":
             return f"Kicked: {args[0]}" if args else "Kicked participant"
@@ -328,14 +329,12 @@ class JitsiBotPlugin(Plugin):
         elif command == "watch":
             video_url = args[0] if args else ""
             room_name = args[1] if len(args) > 1 else "watch-party"
-            content_type = detect_content_type(video_url)
             await self._storage.write(
                 f"watch:{event.room_id}",
                 {
                     "room_id": event.room_id,
                     "room_name": room_name,
                     "video_url": video_url,
-                    "content_type": content_type,
                     "creator": event.sender,
                 },
                 namespace="watch_parties",
@@ -352,7 +351,7 @@ class JitsiBotPlugin(Plugin):
 
     def _help_text(self) -> str:
         """Return help text grouped by category."""
-        return f"""Jitsi Commands:
+        return """Jitsi Commands:
 
 Room:
   !jitsi create [name] — Create meeting
@@ -373,3 +372,8 @@ Moderation (mod only):
   !jitsi mod <id> — Grant moderator
   !jitsi record <mode> — Start recording
   !jitsi stoprecord <mode> — Stop recording"""
+
+
+# Maubot entry point
+def setup():
+    return JitsiBotPlugin

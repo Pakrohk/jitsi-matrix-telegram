@@ -18,15 +18,13 @@ classifiers = [
     "Topic :: Communications :: Chat",
 ]
 dependencies = [
-    "evoid>=0.5.0",
-    "evoid[telegram]>=0.5.0",
-    "evoid[asgi]>=0.5.0",
-    "evoid[sqlite]>=0.5.0",
-    "evoid[loguru]>=0.5.0",
-    "evoid[toml]>=0.5.0",
+    "evoid[telegram,asgi,sqlite,loguru,toml]>=0.6.8",
     "matrix-nio[e2e]>=0.20.0",
     "aiohttp>=3.9.0",
 ]
+
+[tool.uv.sources]
+evoid = { path = "/home/ali/Templates/Project/python/EVOID", editable = true }
 
 [project.optional-dependencies]
 dev = [
@@ -34,10 +32,6 @@ dev = [
     "pytest-asyncio>=0.21.0",
     "ruff>=0.4.0",
 ]
-
-[project.urls]
-Homepage = "https://github.com/EvolveBeyond/matrix-jitsi-bot"
-Repository = "https://github.com/EvolveBeyond/matrix-jitsi-bot"
 
 [build-system]
 requires = ["hatchling"]
@@ -64,6 +58,6 @@ host = "0.0.0.0"
 
 [tool.evoid.engines]
 schema = "native"
-storage = "memory"
+storage = "sqlite"
 cache = "memory"
 logger = "loguru"

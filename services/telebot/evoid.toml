@@ -17,19 +17,19 @@ logger = "loguru"
 processors = ["validate", "authorize"]
 
 # ── Telegram Config ──────────────────────────────────────────────────────────
-# EVOID extracts sub-tables from [engines] as options
+# EVOID extracts [engines.X] as options["X"]
 [engines.telegram]
-token = ""  # or TELEGRAM_TOKEN env var
+token = "5984008409:AAFg1wLbLV1SzUlX7AdcbDkwpBcAKKjGlOQ"  # @ChangePayBot
 parse_mode = "HTML"
 
-# ── Proxy Config ─────────────────────────────────────────────────────────────
+# ── Proxy Config (Iran: socks5://127.0.0.1:2081) ─────────────────────────────
 [engines.proxy]
-enabled = false
+enabled = true
 type = "socks5"    # socks5, socks4, http
 host = "127.0.0.1"
-port = 1080
-# username = ""
-# password = ""
+port = 2081
+# username = ""    # optional
+# password = ""    # optional
 
 # ── Jitsi Config ─────────────────────────────────────────────────────────────
 [engines.jitsi]
@@ -38,5 +38,11 @@ muc_domain = "conference.meet.example.com"
 
 # ── Admin Config ─────────────────────────────────────────────────────────────
 [engines.admin]
-whitelist = []     # Telegram user IDs
+whitelist = []     # Telegram user IDs allowed for admin commands
 require_auth = false
+
+# ── Rate Limiting ────────────────────────────────────────────────────────────
+[engines.rate_limit]
+enabled = true
+max_commands = 30
+window_seconds = 60

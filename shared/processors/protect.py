@@ -1,21 +1,36 @@
-"""Protect processor — Protection layer.
+"""Protection processor — rate limiting, spam protection for critical intents."""
 
-IOP: Pure function. Rate limiting, circuit breaking.
-"""
+from evoid import Intent
+from evoid.core.context import Context
+from evoid.core.pipeline import ProcessorResult
+from collections import defaultdict
+import time
 
-from evoid.core import Context
+
+# In-memory rate limiter (use Redis in production)
+_rate_limits: dict[str, list[float]] = defaultdict(list)
 
 
-async def protect(ctx: Context) -> dict:
-    """Protection layer for critical operations.
+async def protect(ctx: Context, intent: Intent) -> ProcessorResult:
+    """Rate limit critical intents."""
+    # Only rate limit critical intents
+    if intent.level.name != "CRITICAL":
+        return ProcessorResult.ok()
 
-    Returns:
-        dict: {"protected": True}
-    """
-    # In production, this would check:
-    # - Rate limiting
-    # - Circuit breaker
-    # - Encryption requirements
-    # - IP blocking
+    user_id = intent.metadata.get("user_id")
+    if not user_id:
+        return ProcessorResult.ok()
 
-    return {"protected": True}
+    key = f"{intent.name}:{user_id}"
+    now = time.time()
+    window = ctx.deps.get("rate_limit_window", 60)  # seconds
+    max_requests = ctx.deps.get("rate_limit_max", 10)
+
+    # Clean old entries
+    _rate_limits[key] = [t for t in _rate_limits[key] if now - t < window]
+
+    if len(_rate_limits[key]) >= max_requests:
+        return ProcessorResult.fail(f"Rate limit exceeded for {intent.name}")
+
+    _rate_limits[key].append(now)
+    return ProcessorResult.ok()
