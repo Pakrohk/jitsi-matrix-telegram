@@ -44,15 +44,20 @@ uv run evo service run jitsi       # port 8003
 
 You can deploy this bot automatically (recommended) or manually.
 
-### 1. Automatic Deployment (Recommended)
+### 1. One-Command Autopilot Deployment (Quickest)
 
-Run our interactive installation script which will check and install Docker, help configure environment variables, and boot up the containers.
+To fully deploy the entire stack with a single copy-paste command (which clones the repository, checks/installs Docker and Docker Compose, configures environment variables, and launches all services), run:
 
 ```bash
-# Make the script executable
-chmod +x deploy.sh
+git clone https://github.com/EvolveBeyond/Matrix-Jitsi-Bot.git matrix-jitsi-bot && cd matrix-jitsi-bot && chmod +x deploy.sh && ./deploy.sh
+```
 
-# Run the deployment script
+### 2. Interactive Automatic Deployment
+
+If you have already cloned or copied the repository files locally, run the interactive deployment script:
+
+```bash
+chmod +x deploy.sh
 ./deploy.sh
 ```
 
@@ -141,6 +146,52 @@ curl http://localhost:8000/docs/json  # JSON spec
 # Jitsi service health
 curl http://localhost:8003/health
 ```
+
+## SaaS & Multi-Tenant Integration
+
+Matrix-Jitsi-Bot is fully optimized for SaaS and multi-tenant applications to scale and run programmatically:
+
+### 1. Programmatic Non-Interactive Deployment
+
+For automated SaaS deployment pipelines (CI/CD, Terraform, Ansible, or custom scripts), you can bypass the interactive setup of `deploy.sh` completely by passing a pre-configured `.env` file and launching Docker Compose directly:
+
+```bash
+# Set your environment variables programmatically
+cat <<EOF > .env
+JITSI_DOMAIN=meet.yourdomain.com
+TELEGRAM_TOKEN=your_tenant_telegram_token
+JICOFO_COMPONENT_SECRET=custom_secret
+JICOFO_AUTH_PASSWORD=focus_password
+JVB_AUTH_PASSWORD=jvb_password
+JVB_SECRET=jvb_secret
+EOF
+
+# Launch the services in non-interactive/detached mode
+docker compose up -d --build
+```
+
+### 2. Multi-Tenant Deployments (Run Multiple Bot Instances)
+
+To host multiple independent bot instances for different customers/tenants on the same physical server, use the Docker Compose **Project Name** (`-p`) flag. This isolates the containers, networks, and volumes for each tenant:
+
+```bash
+# Start Tenant A
+docker compose -p tenant-a up -d --build
+
+# Start Tenant B (with override ports/env)
+JITSI_DOMAIN=tenant-b.yourdomain.com TELEGRAM_TOKEN=token_b docker compose -p tenant-b up -d --build
+```
+
+### 3. API Integration & Automation
+
+Your SaaS core platform can communicate programmatically with the bot gateway and services via standard REST/WebSocket endpoints:
+
+- **ASGI Gateway API:** Exposed on port `8000` by default. Offers AsyncAPI docs at `http://localhost:8000/docs` or raw JSON at `http://localhost:8000/docs/json`.
+- **Health Monitoring:** Integrate with your orchestrator or monitoring stack (e.g., Prometheus, Uptime Kuma) using standard HTTP GET requests:
+  - Gateway: `http://localhost:8000/health`
+  - Jitsi Bot Service: `http://localhost:8003/health`
+
+---
 
 ## Configuration
 
