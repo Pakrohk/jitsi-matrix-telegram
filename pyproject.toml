@@ -24,7 +24,7 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-evoid = { path = "/home/ali/Templates/Project/python/EVOID", editable = true }
+evoid = { git = "https://github.com/EvolveBeyond/EVOID" }
 
 [project.optional-dependencies]
 dev = [
