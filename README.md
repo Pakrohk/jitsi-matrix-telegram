@@ -40,15 +40,13 @@ uv run evo service run matrixbot   # port 8002
 uv run evo service run jitsi       # port 8003
 ```
 
-## Docker Deployment / راه‌اندازی داکر
+## Docker Deployment
 
 You can deploy this bot automatically (recommended) or manually.
-شما می‌توانید این ربات را به صورت خودکار (پیشنهادی) یا دستی راه‌اندازی کنید.
 
-### 1. Automatic Deployment / راه‌اندازی خودکار (Recommended)
+### 1. Automatic Deployment (Recommended)
 
 Run our interactive installation script which will check and install Docker, help configure environment variables, and boot up the containers.
-اسکریپت تعاملی نصب ما را اجرا کنید تا داکر را بررسی و نصب کند، به شما در تنظیم متغیرهای محیطی کمک کند و در نهایت کانتینرها را اجرا کند.
 
 ```bash
 # Make the script executable
@@ -60,17 +58,16 @@ chmod +x deploy.sh
 
 ---
 
-### 2. Manual Deployment / راه‌اندازی دستی
+### 2. Manual Deployment
 
-#### Prerequisites / پیش‌نیازها
+#### Prerequisites
 - Docker & Docker Compose v2+
 - `.env` file with secrets (copy from `.env.example`)
 
-#### Setup / مراحل اجرا
+#### Setup
 
 ```bash
 # 1. Copy and edit environment
-# ۱. کپی کردن و ویرایش فایل تنظیمات محیطی
 cp .env.example .env
 
 # Edit .env with your values:
@@ -79,11 +76,9 @@ cp .env.example .env
 #   MATRIX_* vars (optional)
 
 # 2. Start Jitsi stack + bots with build
-# ۲. بیلد و اجرای استک سرویس‌های داکر
 docker compose up -d --build
 
 # 3. Check logs
-# ۳. بررسی لاگ سرویس‌ها
 docker compose logs -f gateway
 docker compose logs -f telebot
 ```
