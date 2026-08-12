@@ -1,0 +1,63 @@
+[project]
+name = "matrix-jitsi-bot"
+version = "0.1.0"
+description = "Matrix + Telegram bot for Jitsi management using EVOID IOP runtime"
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.12"
+authors = [
+    { name = "EvolveBeyond", email = "pakrohk@gmail.com" }
+]
+keywords = ["evoid", "jitsi", "matrix", "telegram", "iop"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Communications :: Chat",
+]
+dependencies = [
+    "evoid[telegram,asgi,sqlite,loguru,toml]>=0.6.10",
+    "matrix-nio[e2e]>=0.20.0",
+    "aiohttp>=3.9.0",
+]
+
+[tool.uv.sources]
+evoid = { path = "/home/ali/Templates/Project/python/EVOID", editable = true }
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "ruff>=0.4.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["shared", "services"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "C90", "I", "N", "UP"]
+ignore = ["E501", "N802", "C901"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.evoid]
+adapter = "asgi"
+host = "0.0.0.0"
+
+[tool.evoid.engines]
+schema = "native"
+storage = "sqlite"
+cache = "memory"
+logger = "loguru"

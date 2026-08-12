@@ -1,0 +1,37 @@
+[service]
+name = "jitsi"
+version = "0.1.0"
+
+[runtime]
+adapter = "asgi"
+host = "0.0.0.0"
+port = 8003
+
+[engines]
+schema = "native"
+storage = "sqlite"
+cache = "memory"
+logger = "loguru"
+
+[pipeline]
+processors = ["validate", "authorize", "audit", "protect"]
+
+# ── SQLite Config ────────────────────────────────────────────────────────────
+[engines.sqlite]
+db_path = "jitsi.db"
+
+# ── Jitsi Config ─────────────────────────────────────────────────────────────
+[engines.jitsi]
+server_url = "https://meet.example.com"
+muc_domain = "conference.meet.example.com"
+
+# ── Admin Config ─────────────────────────────────────────────────────────────
+[engines.admin]
+whitelist = []
+require_auth = false
+
+# ── Rate Limiting ────────────────────────────────────────────────────────────
+[engines.rate_limit]
+enabled = true
+max_commands = 30
+window_seconds = 60

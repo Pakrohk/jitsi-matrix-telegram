@@ -1,0 +1,48 @@
+[service]
+name = "telebot"
+version = "0.1.0"
+
+[runtime]
+adapter = "telegram"
+host = "0.0.0.0"
+port = 8001
+
+[engines]
+schema = "native"
+storage = "memory"
+cache = "memory"
+logger = "loguru"
+
+[pipeline]
+processors = ["validate", "authorize"]
+
+# ── Telegram Config ──────────────────────────────────────────────────────────
+# EVOID extracts [engines.X] as options["X"]
+[engines.telegram]
+token = ""  # or TELEGRAM_TOKEN env var
+parse_mode = "HTML"
+
+# ── Proxy Config (Iran: socks5://127.0.0.1:2081) ─────────────────────────────
+[engines.proxy]
+enabled = true
+type = "socks5"    # socks5, socks4, http
+host = "127.0.0.1"
+port = 2081
+# username = ""
+# password = ""
+
+# ── Jitsi Config ─────────────────────────────────────────────────────────────
+[engines.jitsi]
+server_url = "https://meet.example.com"
+muc_domain = "conference.meet.example.com"
+
+# ── Admin Config ─────────────────────────────────────────────────────────────
+[engines.admin]
+whitelist = []     # Telegram user IDs allowed for admin commands
+require_auth = false
+
+# ── Rate Limiting ────────────────────────────────────────────────────────────
+[engines.rate_limit]
+enabled = true
+max_commands = 30
+window_seconds = 60

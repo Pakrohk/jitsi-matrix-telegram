@@ -1,0 +1,55 @@
+[service]
+name = "matrixbot"
+version = "0.1.0"
+
+[runtime]
+adapter = "maubot"
+host = "0.0.0.0"
+port = 8002
+
+[engines]
+schema = "native"
+storage = "sqlite"
+cache = "memory"
+logger = "loguru"
+
+[pipeline]
+processors = ["validate", "authorize"]
+
+# ── Matrix Prerequisites ─────────────────────────────────────────────────────
+[engines.matrix]
+homeserver = "https://matrix.example.com"
+user = "@jitsi-bot:example.com"
+password = ""
+access_token = ""
+device_id = "JITSI_BOT_001"
+encryption = false
+
+# ── EVOID Maubot Config ─────────────────────────────────────────────────────
+[engines.maubot]
+service_name = "jitsi-matrix"
+command_prefix = "jitsi"
+max_message_length = 4000
+
+# ── Jitsi Config ─────────────────────────────────────────────────────────────
+[engines.jitsi]
+server_url = "https://meet.example.com"
+muc_domain = "conference.meet.example.com"
+prosody_modules = true
+admin_username = ""
+admin_password = ""
+
+# ── SQLite Config ────────────────────────────────────────────────────────────
+[engines.sqlite]
+db_path = "jitsi-bot.db"
+
+# ── Admin Config ─────────────────────────────────────────────────────────────
+[engines.admin]
+whitelist = []
+require_auth = false
+
+# ── Rate Limiting ────────────────────────────────────────────────────────────
+[engines.rate_limit]
+enabled = true
+max_commands = 30
+window_seconds = 60
