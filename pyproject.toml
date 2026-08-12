@@ -19,7 +19,7 @@ classifiers = [
 ]
 dependencies = [
     "evoid[telegram,asgi,sqlite,loguru,toml]>=0.6.10",
-    "matrix-nio[e2e]>=0.20.0",
+    "maubot>=0.6.0",
     "aiohttp>=3.9.0",
 ]
 
@@ -53,11 +53,44 @@ asyncio_mode = "auto"
 testpaths = ["tests"]
 
 [tool.evoid]
-adapter = "asgi"
+adapter = "maubot"
 host = "0.0.0.0"
+port = 8002
 
 [tool.evoid.engines]
 schema = "native"
 storage = "sqlite"
 cache = "memory"
 logger = "loguru"
+
+[tool.evoid.engines.matrix]
+homeserver = "https://matrix.example.com"
+user = "@jitsi-bot:example.com"
+password = ""
+access_token = ""
+device_id = "JITSI_BOT_001"
+encryption = false
+
+[tool.evoid.engines.maubot]
+service_name = "jitsi-matrix"
+command_prefix = "jitsi"
+max_message_length = 4000
+
+[tool.evoid.engines.jitsi]
+server_url = "https://meet.example.com"
+muc_domain = "conference.meet.example.com"
+prosody_modules = true
+admin_username = ""
+admin_password = ""
+
+[tool.evoid.engines.sqlite]
+db_path = "jitsi-bot.db"
+
+[tool.evoid.engines.admin]
+whitelist = []
+require_auth = false
+
+[tool.evoid.engines.rate_limit]
+enabled = true
+max_commands = 30
+window_seconds = 60
