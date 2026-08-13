@@ -382,6 +382,19 @@ dev = [
 ]
 
 [[package]]
+name = "evoid-maubot"
+version = "0.2.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "evoid" },
+    { name = "maubot" },
+    { name = "mautrix" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/50/9d/561104cf0d05838dc51be6cf6594fab915f4876469c237a23e2cee6373f1/evoid_maubot-0.2.1-py3-none-any.whl", hash = "sha256:3f50507979a5809fbe0ba06842aa58afc7fbb74a0029a22663af6a156224d19d", size = 12432, upload-time = "2026-08-12T20:05:34.369Z" },
+]
+
+[[package]]
 name = "frozenlist"
 version = "1.8.0"
 source = { registry = "https://pypi.org/simple" }
@@ -637,7 +650,7 @@ source = { editable = "." }
 dependencies = [
     { name = "aiohttp" },
     { name = "evoid", extra = ["asgi", "loguru", "sqlite", "telegram", "toml"] },
-    { name = "maubot" },
+    { name = "evoid-maubot" },
 ]
 
 [package.optional-dependencies]
@@ -651,7 +664,7 @@ dev = [
 requires-dist = [
     { name = "aiohttp", specifier = ">=3.9.0" },
     { name = "evoid", extras = ["telegram", "asgi", "sqlite", "loguru", "toml"], editable = "/home/ali/Templates/Project/python/EVOID" },
-    { name = "maubot", specifier = ">=0.6.0" },
+    { name = "evoid-maubot", specifier = ">=0.2.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.21.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.4.0" },
