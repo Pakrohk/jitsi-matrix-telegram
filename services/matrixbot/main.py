@@ -25,11 +25,10 @@ except ImportError:
     HAS_EVOID = False
 
 try:
-    from evoid_smart_storage import SmartStorage
-    from evoid_sqlite import create_storage
+    import importlib.util
 
-    HAS_STORAGE = True
-except ImportError:
+    HAS_STORAGE = importlib.util.find_spec("evoid_smart_storage") is not None
+except Exception:
     HAS_STORAGE = False
 
 if TYPE_CHECKING:
