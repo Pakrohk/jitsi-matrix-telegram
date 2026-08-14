@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from evoid_maubot.config import Config as BaseConfig
+from mautrix.util.config import ConfigUpdateHelper
 
 
 class Config(BaseConfig):
@@ -40,3 +41,8 @@ class Config(BaseConfig):
                 "admin_whitelist": [],
             }
         )
+
+    def do_update(self, helper: ConfigUpdateHelper) -> None:
+        """Required by BaseProxyConfig."""
+        super().do_update(helper)
+        helper.copy("jitsi")
